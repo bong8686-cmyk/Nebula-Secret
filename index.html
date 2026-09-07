@@ -392,6 +392,18 @@ section.block{padding:40px 0}
 .toast.show{transform:translate(-50%,0);opacity:1}
 .toast svg{width:17px;height:17px;stroke:var(--accent)}
 
+/* ================= Homepage popup ================= */
+.popup-backdrop{position:fixed;inset:0;background:rgba(31,30,35,.6);z-index:250;display:none;align-items:center;justify-content:center;padding:20px}
+.popup-backdrop.open{display:flex}
+.popup-modal{background:#fff;border-radius:16px;max-width:460px;width:100%;overflow:hidden;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:popupIn .3s ease}
+@keyframes popupIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:none}}
+.popup-img{max-height:220px;overflow:hidden;background:#f0f0f0}
+.popup-img img{width:100%;height:auto;display:block}
+.popup-body{padding:24px}
+.popup-body h3{font-size:20px;margin:0 0 10px;color:var(--ink)}
+.popup-body p,.popup-body div{font-size:14px;color:var(--ink-soft);margin:0 0 16px;line-height:1.6}
+.popup-close{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.92);border:none;font-size:22px;line-height:1;cursor:pointer;z-index:2;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.15);color:var(--ink)}
+
 /* ================= Checkout modal ================= */
 .modal-backdrop{position:fixed;inset:0;background:rgba(31,30,35,.55);z-index:200;display:grid;place-items:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .3s}
 .modal-backdrop.open{opacity:1;pointer-events:auto}
@@ -491,7 +503,7 @@ section.block{padding:40px 0}
 .stat-card .s-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;float:right}
 .stat-card .s-icon svg{width:19px;height:19px;stroke:var(--brand)}
 .admin-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:22px}
-.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .panel-head h3{font-size:15.5px;font-weight:700}
 .panel-head .ph-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
 .panel-body{padding:20px}
@@ -518,7 +530,7 @@ table.admin-table{width:100%;border-collapse:collapse;font-size:13.5px}
 .ov-v{font-size:13.5px;font-weight:600;word-break:break-word}
 .pf-prev{width:120px;height:120px;border-radius:10px;border:1px solid var(--line-dark);background:#fff;overflow:hidden;display:grid;place-items:center}
 .pf-prev img{width:100%;height:100%;object-fit:cover}
-.upload-btn{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line-dark);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:border-color .2s,color .2s;background:var(--bg)}
+.upload-btn{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line-dark);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;transition:border-color .2s,color .2s;background:var(--bg);align-self:flex-start;width:auto;max-width:100%}
 .upload-btn:hover{border-color:var(--brand);color:var(--brand-dark)}
 
 /* ================= Customer account ================= */
@@ -578,7 +590,7 @@ details.ct-block > .form-grid{padding:14px 16px}
   .catnav{top:auto;position:relative}
   .catnav-inner{padding:0 12px}
   .catnav .all-cats{position:static}
-  .mega-menu{position:fixed;left:12px;right:12px;top:auto;border-radius:12px;max-height:60vh;overflow-y:auto}
+  .mega-menu{position:fixed;left:12px;right:12px;top:auto;border-radius:12px;max-height:60vh;overflow-y:auto;transition:none}
   .hero{margin:14px 16px 0;min-height:400px;border-radius:14px}
   .hero-content{padding:36px 26px}
   .hero h1{font-size:28px}
@@ -712,12 +724,6 @@ details.ct-block > .form-grid{padding:14px 16px}
   <div class="catnav-inner" id="catnavInner"></div>
 </nav>
 
-<!-- ================= PROMO ================= -->
-<div class="promo" id="promoBar">
-  <span id="promoText">Wholesale &amp; OEM/ODM — Minimum order applies. Contact sales@nebulasecret.com for bulk pricing</span>
-  <button class="close-x" onclick="this.parentElement.style.display='none'" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
-</div>
-
 <!-- ================= APP ================= -->
 <main id="app"></main>
 
@@ -780,6 +786,19 @@ details.ct-block > .form-grid{padding:14px 16px}
 </aside>
 
 <div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<!-- ================= HOMEPAGE POPUP ================= -->
+<div class="popup-backdrop" id="popupBackdrop">
+  <div class="popup-modal">
+    <button class="popup-close" onclick="closePopup()" aria-label="Close">&times;</button>
+    <div class="popup-img" id="popupImgWrap"><img id="popupImg" src="" alt=""></div>
+    <div class="popup-body">
+      <h3 id="popupTitle"></h3>
+      <div id="popupBodyText"></div>
+      <a class="btn" id="popupBtn" href="#" style="margin-top:8px">Contact Sales</a>
+    </div>
+  </div>
+</div>
 
 <div class="modal-backdrop" id="checkoutModal">
   <div class="modal">
@@ -879,7 +898,13 @@ function defaultTheme(){
     heroTitle: "Your Trusted Partner in Product Wholesale & Custom Manufacturing",
     heroSub: "From bulk supply to full OEM/ODM private label — we help brands, retailers and distributors source quality products, from skincare and body care to home wellness and everyday essentials found in department stores.",
     banner: BANNER,
-    freeShipAt: 20
+    freeShipAt: 20,
+    popupEnabled: false,
+    popupTitle: "Latest Promotion",
+    popupBody: "Contact us for wholesale pricing and OEM/ODM services.",
+    popupImage: "",
+    popupBtnText: "Contact Sales",
+    popupBtnLink: "mailto:sales@nebulasecret.com"
   };
 }
 function getTheme(){
@@ -1274,9 +1299,11 @@ function uploadImageTo(inputId, targetId, maxW){
       const dataUrl = cv.toDataURL("image/jpeg", 0.82);
       const t = document.getElementById(targetId);
       if(t) t.value = dataUrl;
-      const prev = document.getElementById(targetId.replace("Input", "Prev"));
+      const prevId = targetId.includes("Input") ? targetId.replace("Input", "Prev") : targetId + "Prev";
+      const prev = document.getElementById(prevId);
       if(prev) prev.src = dataUrl;
-      const badge = document.getElementById(targetId.replace("Input", "Name"));
+      const nameId = targetId.includes("Input") ? targetId.replace("Input", "Name") : targetId + "Name";
+      const badge = document.getElementById(nameId);
       if(badge) badge.textContent = file.name.slice(0, 40);
       showToast("Image ready — save the product to keep it");
     };
@@ -1328,13 +1355,13 @@ async function mailOrder(o){
   const cfg = getMailCfg();
   const recipients = mailRecipients(cfg);
   if(!cfg || !cfg.enabled || (cfg.provider === "emailjs" ? (!cfg.serviceId || !cfg.templateId || !cfg.publicKey) : !cfg.email)){
-    showToast("Order email not sent — set up Admin → Theme → Order Emails first");
+    showToast("Order email not sent — set up Admin → Order Emails first");
     return;
   }
   const st = $("#ocEmailState");
   if(st) st.textContent = "Sending order email…";
   const r = await sendOrderEmail(o, cfg);
-  if(st) st.textContent = r.ok ? "Order email sent to " + recipients.join(", ") : "Email send failed — check Admin → Theme → Order Emails";
+  if(st) st.textContent = r.ok ? "Order email sent to " + recipients.join(", ") : "Email send failed — check Admin → Order Emails";
   showToast(r.ok ? "Order email sent" : "Email send failed");
 }
 function continueShopping(){
@@ -1597,11 +1624,11 @@ function placeOrder(){
     const st = $("#ocEmailState");
     if(st) st.textContent = "Sending order email…";
     sendOrderEmail(o, cfg).then(r => {
-      if(st) st.textContent = r.ok ? "Order email sent to " + recipients.join(", ") : "Email not sent — check Admin → Theme → Order Emails for details.";
+      if(st) st.textContent = r.ok ? "Order email sent to " + recipients.join(", ") : "Email not sent — check Admin → Order Emails for details.";
     });
   }else{
     const st = $("#ocEmailState");
-    if(st) st.textContent = "Order saved. To receive order emails automatically, set up Admin → Theme → Order Emails, then click Send Order Email.";
+    if(st) st.textContent = "Order saved. To receive order emails automatically, set up Admin → Order Emails, then click Send Order Email.";
   }
   $("#orderModal").classList.add("open");
 }
@@ -1640,12 +1667,16 @@ function renderCatNav(){
   const inner = $("#catnavInner");
   inner.innerHTML =
     '<div class="all-cats" id="allCats">' +
-      '<a href="#/shop">' + IC.box + ' All Categories</a>' +
+      '<a href="#/shop" onclick="closeMegaMenu()">' + IC.box + ' All Categories</a>' +
       '<div class="mega-menu">' +
-        cats.map(c => '<a href="#/shop?cat=' + c.cs + '"><span>' + esc(c.c) + '</span><span class="n">' + getProducts().filter(p => p.cs === c.cs).length + '</span></a>').join("") +
+        cats.map(c => '<a href="#/shop?cat=' + c.cs + '" onclick="closeMegaMenu()"><span>' + esc(c.c) + '</span><span class="n">' + getProducts().filter(p => p.cs === c.cs).length + '</span></a>').join("") +
       '</div>' +
     '</div>' +
-    cats.map(c => '<a href="#/shop?cat=' + c.cs + '">' + esc(c.c) + '</a>').join("");
+    cats.map(c => '<a href="#/shop?cat=' + c.cs + '" onclick="closeMegaMenu()">' + esc(c.c) + '</a>').join("");
+}
+function closeMegaMenu(){
+  const m = document.querySelector("#allCats.open");
+  if(m) m.classList.remove("open");
 }
 
 function cardHTML(p, opts){
@@ -2013,7 +2044,32 @@ function viewHome(){
       '<div id="nlMsg" style="display:none;margin-top:10px;font-size:13px;font-weight:600"></div>' +
     '</div>' +
   '</div></section>';
+  setTimeout(showPopupIfNeeded, 700);
 }
+
+/* ============ Homepage popup ============ */
+function showPopupIfNeeded(){
+  try{
+    const th = getTheme();
+    if(!th || !th.popupEnabled) return;
+    if(sessionStorage.getItem("ns_popup_shown")) return;
+    const imgWrap = document.getElementById("popupImgWrap");
+    const img = document.getElementById("popupImg");
+    if(th.popupImage && img && imgWrap){ img.src = th.popupImage; imgWrap.style.display = "block"; }
+    else if(imgWrap){ imgWrap.style.display = "none"; }
+    const t = document.getElementById("popupTitle"); if(t) t.textContent = th.popupTitle || "";
+    const b = document.getElementById("popupBodyText"); if(b) b.innerHTML = th.popupBody || "";
+    const btn = document.getElementById("popupBtn");
+    if(btn){
+      if(th.popupBtnText && th.popupBtnLink){ btn.style.display = "inline-flex"; btn.textContent = th.popupBtnText; btn.href = th.popupBtnLink; }
+      else btn.style.display = "none";
+    }
+    document.getElementById("popupBackdrop").classList.add("open");
+    sessionStorage.setItem("ns_popup_shown","1");
+  }catch(e){}
+}
+function closePopup(){ const el = document.getElementById("popupBackdrop"); if(el) el.classList.remove("open"); }
+document.addEventListener("click", e => { if(e.target && e.target.id === "popupBackdrop") closePopup(); });
 
 function subscribeNewsletter(ev){
   ev.preventDefault();
@@ -2337,6 +2393,7 @@ function renderAdminShell(content){
         '<a href="#/admin/categories" data-av="categories">' + IC.tag + ' Categories</a>' +
         '<a href="#/admin/customers" data-av="customers">' + IC.users + ' Customer Accounts</a>' +
         '<a href="#/admin/theme" data-av="theme">' + IC.palette + ' Theme</a>' +
+        '<a href="#/admin/emails" data-av="emails">' + IC.mail + ' Order Emails</a>' +
         '<a href="#/admin/content" data-av="content">' + IC.edit + ' Site Content</a>' +
         '<a href="#/admin/cloudsync" data-av="cloudsync">' + IC.sync + ' Cloud Sync</a>' +
         '<div class="sep"></div>' +
@@ -2773,14 +2830,12 @@ function adminDeleteAdmin(user){
 
 function adminTheme(){
   const th = getTheme();
-  const mc = getMailCfg();
   const content =
-    '<div class="admin-panel"><div class="panel-head"><div><h3>Store Theme</h3><div class="ph-sub">Brand identity, hero banner and announcements</div></div><button class="btn sm ghost" onclick="resetTheme()">Reset to default</button></div>' +
+    '<div class="admin-panel"><div class="panel-head"><div><h3>Store Theme</h3><div class="ph-sub">Brand identity, hero banner and homepage popup</div></div><button class="btn sm ghost" onclick="resetTheme()">Reset to default</button></div>' +
     '<div class="panel-body">' +
       '<div class="form-grid">' +
         '<div class="field full"><label>Store name</label><input id="thName" value="' + esc(th.storeName) + '"></div>' +
         '<div class="field full"><label>Tagline (small text under logo)</label><input id="thTag" value="' + esc(th.tagline) + '"></div>' +
-        '<div class="field full"><label>Announcement bar text</label><input id="thAnnounce" value="' + esc(th.announce) + '"></div>' +
         '<div class="field"><label>Brand color</label><input id="thBrand" type="color" value="' + th.brandColor + '" style="height:46px;padding:4px"></div>' +
         '<div class="field"><label>Accent color</label><input id="thAccent" type="color" value="' + th.accentColor + '" style="height:46px;padding:4px"></div>' +
         '<div class="field full"><label>Color presets</label><div class="theme-swatches" id="thSwatches">' +
@@ -2792,6 +2847,24 @@ function adminTheme(){
         '<div class="field full"><label>Hero banner image (URL or upload)</label><div style="display:flex;gap:8px;align-items:center"><input id="thBanner" value="' + esc(th.banner) + '" style="flex:1" placeholder="Paste image URL or click Upload"><button type="button" class="btn sm" style="flex-shrink:0" onclick="document.getElementById(\'thBannerFile\').click()">Upload Image</button></div><input type="file" id="thBannerFile" accept="image/*" style="display:none" onchange="handleBannerUpload(this)"><div id="thBannerPreview" style="margin-top:8px"></div></div>' +
       '</div>' +
     '</div></div>' +
+    '<div class="admin-panel"><div class="panel-head"><div><h3>Homepage Popup</h3><div class="ph-sub">A promotional popup shown once per session on the homepage</div></div></div>' +
+    '<div class="panel-body">' +
+      '<div class="form-grid">' +
+        '<div class="field"><label>Enable popup</label><select id="thPopupEnabled"><option value="1"' + (th.popupEnabled ? " selected" : "") + '>On — show on homepage</option><option value="0"' + (!th.popupEnabled ? " selected" : "") + '>Off — hidden</option></select></div>' +
+        '<div class="field full"><label>Popup title</label><input id="thPopupTitle" value="' + esc(th.popupTitle) + '"></div>' +
+        '<div class="field full"><label>Popup content (HTML)</label><textarea id="thPopupBody" rows="4">' + esc(th.popupBody) + '</textarea></div>' +
+        '<div class="field full"><label>Popup image (URL or upload)</label><div style="display:flex;gap:8px;align-items:center"><input id="thPopupImg" value="' + esc(th.popupImage) + '" style="flex:1" placeholder="Paste image URL or click Upload"><button type="button" class="btn sm" style="flex-shrink:0" onclick="document.getElementById(\'thPopupImgFile\').click()">Upload Image</button></div><input type="file" id="thPopupImgFile" accept="image/*" style="display:none" onchange="handlePopupImgUpload(this)"><div id="thPopupImgPreview" style="margin-top:8px"></div></div>' +
+        '<div class="field"><label>Button text</label><input id="thPopupBtnText" value="' + esc(th.popupBtnText) + '"></div>' +
+        '<div class="field"><label>Button link</label><input id="thPopupBtnLink" value="' + esc(th.popupBtnLink) + '" placeholder="mailto: or https://"></div>' +
+      '</div>' +
+    '</div></div>' +
+    '<div class="save-bar"><span class="sb-note">Changes apply to the storefront immediately after saving.</span><button class="btn" onclick="saveThemeForm()">Save Theme</button></div>';
+  renderAdminShell(content);
+  $("#adminTitle").textContent = "Theme";
+}
+function adminEmails(){
+  const mc = getMailCfg();
+  const content =
     '<div class="admin-panel"><div class="panel-head"><div><h3>Order Emails</h3><div class="ph-sub">Auto-send every new order to your inbox — works on GitHub Pages (no server needed)</div></div></div>' +
     '<div class="panel-body">' +
       '<div class="form-grid">' +
@@ -2812,10 +2885,9 @@ function adminTheme(){
       '<button class="btn" style="margin-top:4px" onclick="saveMailForm()">Save Email Settings</button>' +
       '<button class="btn ghost" style="margin-top:4px;margin-left:8px" onclick="sendTestOrderEmail()">Send Test Email</button>' +
       '<div class="form-hint" style="margin-top:10px"><b>Still not receiving order emails?</b> (1) Save settings, keep <b>Enable auto email</b> On; (2) click <b>Send Test Email</b>; (3) EmailJS users: watch for the toast error message and check your template/service keys. FormSubmit users: check spam folder for the verification link and click it once. Orders are always saved in Admin → Orders and downloadable as Excel/CSV regardless of email.</div>' +
-    '</div></div>' +
-    '<div class="save-bar"><span class="sb-note">Changes apply to the storefront immediately after saving.</span><button class="btn" onclick="saveThemeForm()">Save Theme</button></div>';
+    '</div></div>';
   renderAdminShell(content);
-  $("#adminTitle").textContent = "Theme";
+  $("#adminTitle").textContent = "Order Emails";
   toggleMailProvider();
   const mp = $("#mailProvider");
   if(mp) mp.onchange = toggleMailProvider;
@@ -2995,6 +3067,31 @@ function handleBannerUpload(input){
   };
   reader.readAsDataURL(file);
 }
+function handlePopupImgUpload(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(!file.type.startsWith("image/")){ showToast("Please select an image file"); return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement("canvas");
+      const maxW = 1200;
+      let w = img.width, h = img.height;
+      if(w > maxW){ h = Math.round(h * maxW / w); w = maxW; }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      const inp = document.getElementById("thPopupImg");
+      if(inp) inp.value = dataUrl;
+      const prev = document.getElementById("thPopupImgPreview");
+      if(prev) prev.innerHTML = '<img src="' + dataUrl + '" style="max-width:100%;max-height:140px;border-radius:8px;border:1px solid var(--line)">';
+      showToast("Popup image uploaded — click Save to apply");
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
 function applyPreset(i){
   const p = THEME_PRESETS[i];
   $("#thBrand").value = p.brand;
@@ -3067,13 +3164,18 @@ function saveThemeForm(){
   const th = getTheme();
   th.storeName = $("#thName").value.trim() || "Nebula Secret";
   th.tagline = $("#thTag").value.trim();
-  th.announce = $("#thAnnounce").value.trim();
   th.brandColor = $("#thBrand").value;
   th.accentColor = $("#thAccent").value;
   th.heroKicker = $("#thKicker").value.trim();
   th.heroTitle = $("#thTitle").value.trim();
   th.heroSub = $("#thSub").value.trim();
   th.banner = $("#thBanner").value.trim() || BANNER;
+  th.popupEnabled = $("#thPopupEnabled").value === "1";
+  th.popupTitle = $("#thPopupTitle").value.trim();
+  th.popupBody = $("#thPopupBody").value.trim();
+  th.popupImage = $("#thPopupImg").value.trim();
+  th.popupBtnText = $("#thPopupBtnText").value.trim();
+  th.popupBtnLink = $("#thPopupBtnLink").value.trim();
   saveTheme(th);
   applyTheme();
   showToast("Theme saved");
@@ -3096,7 +3198,6 @@ function applyTheme(){
   r.setProperty("--accent-soft", shade(th.accentColor, 90, true));
   $("#brandName").innerHTML = esc(th.storeName) + "<small>" + esc(th.tagline) + "</small>";
   document.title = th.storeName + " — Wholesale Supplier & OEM/ODM Manufacturer";
-  const promo = $("#promoText"); if(promo) promo.textContent = th.announce;
 }
 
 /* simple color shade util */
@@ -3166,6 +3267,7 @@ function adminRoute(){
   else if(page === "customers") adminCustomers();
   else if(page === "users") adminAdminUsers();
   else if(page === "theme") adminTheme();
+  else if(page === "emails") adminEmails();
   else if(page === "content") adminContent();
   else if(page === "cloudsync") adminCloudSync();
   else viewAdminLogin();
