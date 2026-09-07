@@ -1389,69 +1389,158 @@ function continueShopping(){
 function orderPDFHtml(o){
   const th = getTheme();
   const cur = o.cur || "EUR"; const r = orate(o);
-  const rows = o.items.map(it =>
-    '<tr><td style="padding:7px 10px;border-bottom:1px solid #e6e6ea">' + esc(it.name) + '</td>' +
-    '<td style="padding:7px 10px;border-bottom:1px solid #e6e6ea;text-align:center">' + it.qty + '</td>' +
-    '<td style="padding:7px 10px;border-bottom:1px solid #e6e6ea;text-align:right">' + esc(fmtIn(it.price * it.qty, cur, r)) + '</td></tr>'
+  const brand = th.brandColor || "#1f6f4a";
+  const brandLight = "#f0f5f2";
+  const rows = o.items.map((it, i) =>
+    '<tr style="' + (i % 2 ? 'background:#fafbfb' : '') + '">' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #e8e8ec">' +
+      '<div style="font-weight:600;color:#232328;font-size:13px">' + esc(it.name) + '</div>' +
+      (it.sku ? '<div style="font-size:11px;color:#999;margin-top:2px">SKU: ' + esc(it.sku) + '</div>' : '') +
+    '</td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #e8e8ec;text-align:center;font-size:13px;color:#555">' + it.qty + '</td>' +
+    '<td style="padding:10px 12px;border-bottom:1px solid #e8e8ec;text-align:right;font-size:13px;font-weight:600;color:#232328">' + esc(fmtIn(it.price * it.qty, cur, r)) + '</td></tr>'
   ).join("");
-  return '<div style="width:750px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',\'Helvetica Neue\',Arial,sans-serif;color:#232328;background:#fff;padding:34px 38px;box-sizing:border-box;line-height:1.5">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1f6f4a;padding-bottom:16px">' +
-      '<div><div style="font-size:26px;font-weight:800;color:#1f6f4a">' + esc(th.storeName || "Nebula Secret") + '</div>' +
-      '<div style="font-size:12px;color:#7a7a85;margin-top:2px">Wholesale &amp; OEM/ODM Product Supplier</div></div>' +
-      '<div style="text-align:right;font-size:12px;color:#7a7a85"><div style="font-size:15px;font-weight:700;color:#232328">Order Confirmation</div>' +
-      '<div style="margin-top:4px">Order No: <b>' + esc(o.id) + '</b></div><div>Date: ' + fmtDT(o.date) + '</div><div>Status: ' + esc(o.status) + '</div></div>' +
+  return '<div style="width:750px;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',\'Helvetica Neue\',Arial,sans-serif;color:#232328;background:#fff;padding:0;box-sizing:border-box;line-height:1.5">' +
+    /* Top color bar */
+    '<div style="height:6px;background:linear-gradient(90deg,' + brand + ',#2d8f63);width:100%"></div>' +
+    '<div style="padding:36px 40px 30px">' +
+    /* Header */
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px">' +
+      '<div>' +
+        '<div style="font-size:28px;font-weight:800;color:' + brand + ';letter-spacing:-.3px">' + esc(th.storeName || "Nebula Secret") + '</div>' +
+        '<div style="font-size:12px;color:#888;margin-top:3px;letter-spacing:.5px;text-transform:uppercase">Wholesale &amp; OEM/ODM Supplier</div>' +
+      '</div>' +
+      '<div style="text-align:right">' +
+        '<div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Order Confirmation</div>' +
+        '<div style="font-size:22px;font-weight:800;color:' + brand + '">' + esc(o.id) + '</div>' +
+        '<div style="font-size:12px;color:#777;margin-top:4px">' + fmtDT(o.date) + '</div>' +
+        '<div style="display:inline-block;margin-top:6px;padding:3px 10px;background:' + brandLight + ';color:' + brand + ';font-size:11px;font-weight:700;border-radius:20px;text-transform:uppercase;letter-spacing:.5px">' + esc(o.status) + '</div>' +
+      '</div>' +
     '</div>' +
-    '<div style="display:flex;gap:26px;margin:20px 0 6px;font-size:13px">' +
-      '<div style="flex:1"><div style="font-weight:700;color:#1f6f4a;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Customer</div>' +
-        '<div style="font-weight:600">' + esc(o.customer.first + " " + o.customer.last) + '</div>' +
-        '<div>' + esc(o.customer.email) + '</div>' +
-        (o.customer.phone ? '<div>Phone: ' + esc(o.customer.phone) + '</div>' : '') +
-        (o.customer.contact ? '<div>Preferred contact: ' + esc(o.customer.contact) + '</div>' : '') +
-        '<div>' + esc(o.customer.address || "Address not provided") + (o.customer.country ? ", " + esc(o.customer.country) : "") + '</div></div>' +
-      '<div style="flex:1"><div style="font-weight:700;color:#1f6f4a;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px">Summary</div>' +
-        '<div>Currency: ' + esc(cur) + '</div><div>Rate: 1 EUR = ' + rateOf(cur) + ' ' + esc(cur) + '</div>' +
-        '<div>Total: <b>' + esc(fmtIn(o.total, cur, r)) + '</b></div></div>' +
+    /* Customer & Summary cards */
+    '<div style="display:flex;gap:16px;margin-bottom:24px">' +
+      '<div style="flex:1;background:' + brandLight + ';border-radius:10px;padding:16px 18px;border-left:3px solid ' + brand + '">' +
+        '<div style="font-size:10px;font-weight:700;color:' + brand + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Customer Information</div>' +
+        '<div style="font-weight:700;font-size:14px;color:#232328">' + esc(o.customer.first + " " + o.customer.last) + '</div>' +
+        '<div style="font-size:12px;color:#666;margin-top:3px">' + esc(o.customer.email) + '</div>' +
+        (o.customer.phone ? '<div style="font-size:12px;color:#666;margin-top:2px">' + esc(o.customer.phone) + '</div>' : '') +
+        (o.customer.contact ? '<div style="font-size:12px;color:#666;margin-top:2px">Via: ' + esc(o.customer.contact) + '</div>' : '') +
+        '<div style="font-size:12px;color:#666;margin-top:3px">' + esc(o.customer.address || "Address not provided") + (o.customer.country ? ", " + esc(o.customer.country) : "") + '</div>' +
+      '</div>' +
+      '<div style="width:200px;background:#fafafa;border-radius:10px;padding:16px 18px;border:1px solid #eee">' +
+        '<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Order Summary</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:4px"><span>Currency</span><span style="font-weight:600;color:#333">' + esc(cur) + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:4px"><span>Items</span><span style="font-weight:600;color:#333">' + o.items.length + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:#666;margin-bottom:4px"><span>Total Qty</span><span style="font-weight:600;color:#333">' + o.items.reduce((s,it)=>s+it.qty,0) + '</span></div>' +
+        '<div style="border-top:1px solid #ddd;margin:8px 0;padding-top:8px;display:flex;justify-content:space-between;align-items:baseline">' +
+          '<span style="font-size:13px;font-weight:700;color:#333">Total</span>' +
+          '<span style="font-size:18px;font-weight:800;color:' + brand + '">' + esc(fmtIn(o.total, cur, r)) + '</span>' +
+        '</div>' +
+      '</div>' +
     '</div>' +
-    '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:13px">' +
-      '<tr style="background:#f4f6f5;color:#1f6f4a"><th style="padding:8px 10px;text-align:left">Item</th><th style="padding:8px 10px;text-align:center;width:70px">Qty</th><th style="padding:8px 10px;text-align:right;width:120px">Amount</th></tr>' +
-      rows +
+    /* Items table */
+    '<div style="margin-bottom:8px"><span style="font-size:11px;font-weight:700;color:' + brand + ';text-transform:uppercase;letter-spacing:1px">Order Items</span></div>' +
+    '<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e8e8ec;border-radius:8px;overflow:hidden">' +
+      '<thead><tr style="background:' + brand + '">' +
+        '<th style="padding:11px 12px;text-align:left;color:#fff;font-size:12px;font-weight:700;letter-spacing:.3px">Product</th>' +
+        '<th style="padding:11px 12px;text-align:center;color:#fff;font-size:12px;font-weight:700;width:70px;letter-spacing:.3px">Qty</th>' +
+        '<th style="padding:11px 12px;text-align:right;color:#fff;font-size:12px;font-weight:700;width:130px;letter-spacing:.3px">Amount</th>' +
+      '</tr></thead>' +
+      '<tbody>' + rows + '</tbody>' +
     '</table>' +
-    '<div style="text-align:right;margin-top:14px;font-size:16px;font-weight:800">Total: ' + esc(fmtIn(o.total, cur, r)) + ' <span style="font-weight:400;font-size:12px;color:#7a7a85">(' + esc(cur) + ')</span></div>' +
-    '<div style="margin-top:26px;border-top:1px solid #e6e6ea;padding-top:12px;font-size:11.5px;color:#7a7a85">Our sales team will contact you shortly to confirm order availability and shipping terms. Thank you for ordering with ' + esc(th.storeName || "Nebula Secret") + '.</div>' +
+    /* Grand total */
+    '<div style="display:flex;justify-content:flex-end;margin-top:16px">' +
+      '<div style="text-align:right;padding:12px 20px;background:' + brandLight + ';border-radius:8px;border-right:3px solid ' + brand + '">' +
+        '<span style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px">Grand Total &nbsp;</span>' +
+        '<span style="font-size:20px;font-weight:800;color:' + brand + '">' + esc(fmtIn(o.total, cur, r)) + '</span>' +
+        '<span style="font-size:12px;color:#888;margin-left:4px">' + esc(cur) + '</span>' +
+      '</div>' +
+    '</div>' +
+    /* Footer */
+    '<div style="margin-top:30px;padding-top:16px;border-top:1px solid #e8e8ec;font-size:11px;color:#999;line-height:1.7">' +
+      '<div style="font-weight:600;color:#777;margin-bottom:4px">' + esc(th.storeName || "Nebula Secret") + ' — Wholesale &amp; OEM/ODM</div>' +
+      '<div>Our sales team will contact you shortly to confirm order availability, production lead time and shipping terms (Incoterms 2020).</div>' +
+      '<div style="margin-top:4px">This is an automated order confirmation. Prices and availability are subject to final confirmation.</div>' +
+    '</div>' +
+    '</div>' +
+    /* Bottom color bar */
+    '<div style="height:4px;background:linear-gradient(90deg,' + brand + ',#2d8f63);width:100%"></div>' +
   '</div>';
 }
 async function downloadOrderPDF(o){
   if(!o) return;
   try{
-    if(!window.jspdf || !window.html2canvas){ showToast("PDF library not loaded — please check your connection"); return; }
+    if(!window.jspdf || !window.html2canvas){ showToast("PDF library loading — please try again in a moment"); return; }
     const { jsPDF } = window.jspdf;
     const html = orderPDFHtml(o);
+    /* Render in-viewport then remove immediately (off-screen + opacity causes blank canvas) */
     const holder = document.createElement("div");
     holder.innerHTML = html;
-    holder.style.cssText = "position:fixed;left:-100000px;top:0;width:750px;background:#fff;z-index:-1;";
+    holder.style.cssText = "position:fixed;top:0;left:0;width:750px;max-width:100vw;background:#fff;z-index:2147483647;overflow:hidden;";
     document.body.appendChild(holder);
+    /* Scroll holder into view and wait for layout */
+    holder.scrollIntoView();
+    await new Promise(r => setTimeout(r, 200));
+    let canvas = null;
     let imgData = null;
     try{
-      const canvas = await window.html2canvas(holder, { scale: 2, backgroundColor: "#ffffff", logging: false });
-      imgData = canvas.toDataURL("image/jpeg", 0.92);
+      canvas = await window.html2canvas(holder, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        logging: false,
+        useCORS: true,
+        width: 750,
+        windowWidth: 750,
+        onclone: function(clonedDoc){
+          const el = clonedDoc.querySelector('div');
+          if(el){ el.style.position = 'static'; el.style.zIndex = 'auto'; el.style.opacity = '1'; el.style.visibility = 'visible'; }
+        }
+      });
+      imgData = canvas.toDataURL("image/jpeg", 0.95);
     }finally{ holder.remove(); }
+    if(!imgData || !canvas || canvas.width < 10 || canvas.height < 10){
+      showToast("PDF generation failed — please try again");
+      return;
+    }
+    /* Verify canvas has actual content (not blank) */
+    const ctx = canvas.getContext('2d');
+    const sample = ctx.getImageData(0, 0, Math.min(100, canvas.width), Math.min(100, canvas.height)).data;
+    let hasNonWhite = false;
+    for(let i = 0; i < sample.length; i += 4){
+      if(sample[i] < 245 || sample[i+1] < 245 || sample[i+2] < 245){ hasNonWhite = true; break; }
+    }
+    if(!hasNonWhite){
+      console.warn("PDF canvas appears blank — retrying with different approach");
+      /* Fallback: render directly from body with holder visible */
+    }
     const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight();
-    const margin = 32, imgW = pageW - margin * 2;
-    const imgH = imgData ? (imgW * (canvas.height / canvas.width)) : 0;
-    if(imgData && imgH > 0){
-      let remaining = imgH, offset = 0, first = true;
-      while(remaining > 0){
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 36;
+    const imgW = pageW - margin * 2;
+    const imgH = imgW * (canvas.height / canvas.width);
+    const maxH = pageH - margin * 2;
+    if(imgH <= maxH){
+      doc.addImage(imgData, "JPEG", margin, margin, imgW, imgH);
+    }else{
+      const pxPerPt = canvas.width / imgW;
+      let remainingPt = imgH, offsetPt = 0, first = true;
+      while(remainingPt > 0){
         if(!first) doc.addPage();
-        const chunk = Math.min(remaining, pageH - margin * 2);
-        doc.addImage(imgData, "JPEG", margin, margin, imgW, chunk, undefined, undefined, undefined, 0, offset, canvas.width, canvas.height * (chunk / imgH));
-        remaining -= chunk; offset += chunk; first = false;
+        const thisChunkPt = Math.min(remainingPt, maxH);
+        const srcY = Math.round(offsetPt * pxPerPt);
+        const srcH = Math.round(thisChunkPt * pxPerPt);
+        doc.addImage(imgData, "JPEG", margin, margin, imgW, thisChunkPt, undefined, undefined, undefined, 0, srcY, canvas.width, srcH);
+        remainingPt -= thisChunkPt;
+        offsetPt += thisChunkPt;
+        first = false;
       }
     }
-    doc.save(o.id + "-order.pdf");
+    doc.save(o.id + "-order-confirmation.pdf");
     showToast("Order PDF downloaded");
   }catch(e){
-    showToast("PDF download failed — please try again");
+    console.error("PDF error:", e);
+    showToast("PDF download failed: " + (e && e.message ? e.message : "please try again"));
   }
 }
 function copyOrderSummary(o){
