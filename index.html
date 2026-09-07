@@ -657,7 +657,7 @@ details.ct-block > .form-grid{padding:14px 16px}
 <div class="topbar">
   <div class="topbar-inner">
     <div class="topbar-left">
-      <span>Welcome to Nebula Secret</span>
+      <span id="tbWelcome">Welcome to Nebula Secret</span>
       <span class="sep hide-m">|</span>
       <span class="hide-m" id="rateNoteWrap" style="opacity:.75"><span id="rateNote"></span></span>
     </div>
@@ -893,7 +893,9 @@ function getTheme(){
     t.banner = BANNER;
     lsSet(LS.theme, t);
   }
-  return Object.assign(defaultTheme(), t || {});
+  if(t) return Object.assign(defaultTheme(), t);
+  if(cloudTheme) return Object.assign(defaultTheme(), cloudTheme);
+  return defaultTheme();
 }
 function saveTheme(t){ lsSet(LS.theme, t); cloudPushKey("theme", t); }
 
@@ -916,12 +918,14 @@ function applyFooterContent(){
   const fc = contentSection("footer");
   if(fc.desc){ const el = document.getElementById("ftDesc"); if(el) el.textContent = fc.desc; }
   if(fc.copyright){ const el = document.getElementById("ftCopy"); if(el) el.textContent = fc.copyright; }
+  const tb = contentSection("topbar");
+  if(tb.welcome){ const el = document.getElementById("tbWelcome"); if(el) el.textContent = tb.welcome; }
 }
 
 /* Cloud catalog: optional live catalog fetched from GitHub Pages data/*.json, so
    visitors always see the latest products/categories without re-uploading index.html.
    Priority: browser localStorage (this device's own changes) > cloud catalog > built-in defaults. */
-let cloudCatalog = null, cloudCats = null, cloudContent = null;
+let cloudCatalog = null, cloudCats = null, cloudContent = null, cloudTheme = null;
 function getProducts(){
   const v = localStorage.getItem(LS.products);
   if(v != null){ try{ const j = JSON.parse(v); if(Array.isArray(j)) return j; }catch(e){} }
@@ -960,8 +964,13 @@ async function loadCloudCatalog(){
       const jc2 = await rc2.json();
       if(jc2 && typeof jc2 === "object") cloudContent = jc2;
     }
-    if(cloudCatalog || cloudCats || cloudContent){
-      try{ renderCatNav(); applyFooterContent(); route(); }catch(e){}
+    const rc3 = await fetch("data/theme.json" + t);
+    if(rc3.ok){
+      const jc3 = await rc3.json();
+      if(jc3 && typeof jc3 === "object") cloudTheme = jc3;
+    }
+    if(cloudCatalog || cloudCats || cloudContent || cloudTheme){
+      try{ renderCatNav(); applyFooterContent(); applyTheme(); route(); }catch(e){}
     }
   }catch(e){}
 }
@@ -1502,8 +1511,8 @@ function renderCart(){
       '<a href="#/product/' + p.id + '" onclick="closeCart()"><img src="' + imgUrl(p.i, 200) + '" alt="' + esc(p.n) + '" loading="lazy" data-pid="' + p.id + '" onerror="imgFallback(this)"></a>' +
       '<div><a class="ci-name" href="#/product/' + p.id + '" onclick="closeCart()">' + esc(p.n) + '</a>' +
       '<div class="ci-price">' + fmt(p.p) + ' each</div>' +
-      '<div class="ci-qty"><button onclick="setQty(' + p.id + ',' + (i.q - 1) + ')">−</button><input type="number" min="1" value="' + i.q + '" onchange="setCartQty(' + p.id + ',this.value)"><button onclick="setQty(' + p.id + ',' + (i.q + 1) + ')">+</button></div>' +
-      '<button class="ci-remove" onclick="removeItem(' + p.id + ')">Remove</button></div>' +
+      '<div class="ci-qty"><button onclick="setQty(\'' + p.id + '\',' + (i.q - 1) + ')">−</button><input type="number" min="1" value="' + i.q + '" onchange="setCartQty(\'' + p.id + '\',this.value)"><button onclick="setQty(\'' + p.id + '\',' + (i.q + 1) + ')">+</button></div>' +
+      '<button class="ci-remove" onclick="removeItem(\'' + p.id + '\')">Remove</button></div>' +
       '<div class="ci-total">' + fmt(i.q * p.p) + '</div></div>';
   }).join("");
   const total = cartTotal();
@@ -2813,20 +2822,16 @@ function adminTheme(){
 }
 function adminContent(){
   const c = getContent();
+  const tb = c.topbar || {};
   const fo = c.footer || {};
   const ab = c.about || {};
-  const inf = c.info || {};
-  const infoPage = (p) => (inf[p] || {});
-  const pages = [
-    ["shipping","Shipping &amp; Delivery"],
-    ["returns","Order Policy"],
-    ["payment","Payment Methods"],
-    ["track","Track Order"],
-    ["faq","FAQs"]
-  ];
   const content =
-    '<div class="admin-panel"><div class="panel-head"><div><h3>Site Content</h3><div class="ph-sub">Edit the words on your public pages — Footer, About and Customer Care. Leave a field empty to keep the default text.</div></div><button class="btn sm ghost" onclick="if(confirm(\'Reset all site content to defaults?\')){ resetContent(); applyFooterContent(); showToast(\'Site content reset to defaults\'); adminContent(); }">Reset all</button></div>' +
+    '<div class="admin-panel"><div class="panel-head"><div><h3>Site Content</h3><div class="ph-sub">Edit the text of the top bar, footer and About page. Leave a field empty to keep the default text.</div></div><button class="btn sm ghost" onclick="if(confirm(\'Reset all site content to defaults?\')){ resetContent(); applyFooterContent(); showToast(\'Site content reset to defaults\'); adminContent(); }">Reset all</button></div>' +
     '<div class="panel-body">' +
+      '<details class="ct-block" open><summary><b>Top bar (black bar at the very top)</b></summary>' +
+        '<div class="form-grid">' +
+          '<div class="field full"><label>Welcome text</label><input id="ctTopbarWelcome" value="' + esc(tb.welcome || "") + '" placeholder="Welcome to Nebula Secret"></div>' +
+        '</div></details>' +
       '<details class="ct-block" open><summary><b>Footer</b></summary>' +
         '<div class="form-grid">' +
           '<div class="field full"><label>Brand description</label><textarea id="ctFooterDesc" rows="3">' + esc(fo.desc || "") + '</textarea></div>' +
@@ -2848,16 +2853,6 @@ function adminContent(){
           '<div class="field"><label>Section title</label><input id="ctPromiseT" value="' + esc((ab.promise||{}).t || "") + '"></div>' +
           '<div class="field full"><label>Lead line</label><input id="ctPromiseLead" value="' + esc((ab.promise||{}).lead || "") + '"></div>' +
         '</div></details>' +
-      pages.map(function(pg){
-        const key = pg[0], label = pg[1];
-        const v = infoPage(key);
-        return '<details class="ct-block"><summary><b>Customer Care — ' + label + '</b></summary>' +
-          '<div class="form-grid">' +
-            '<div class="field"><label>Page title</label><input id="ctInfoT' + key + '" value="' + esc(v.title || "") + '"></div>' +
-            '<div class="field"><label>Subtitle</label><input id="ctInfoS' + key + '" value="' + esc(v.subtitle || "") + '"></div>' +
-            '<div class="field full"><label>Page body (HTML)</label><textarea id="ctInfoB' + key + '" rows="8" placeholder="Leave empty to keep the default page content">' + esc(v.body || "") + '</textarea></div>' +
-          '</div></details>';
-      }).join("") +
     '</div></div>' +
     '<div class="save-bar"><span class="sb-note">Empty fields keep the current default content. Saved content also syncs to the cloud (data/content.json).</span><button class="btn" onclick="saveContentForm()">Save Content</button></div>';
   renderAdminShell(content);
@@ -2866,18 +2861,12 @@ function adminContent(){
 function saveContentForm(){
   const val = id => { const el = document.getElementById(id); return el ? el.value : ""; };
   const c = {
+    topbar: { welcome: val("ctTopbarWelcome").trim() },
     footer: { desc: val("ctFooterDesc").trim(), copyright: val("ctFooterCopy").trim() },
     about: {
       story: { t: val("ctStoryT").trim(), b: val("ctStoryB") },
       mission: { t: val("ctMissionT").trim(), lead: val("ctMissionLead").trim(), b: val("ctMissionB") },
       promise: { t: val("ctPromiseT").trim(), lead: val("ctPromiseLead").trim() }
-    },
-    info: {
-      shipping: { title: val("ctInfoTshipping").trim(), subtitle: val("ctInfoSshipping").trim(), body: val("ctInfoBshipping") },
-      returns:  { title: val("ctInfoTreturns").trim(),  subtitle: val("ctInfoSreturns").trim(),  body: val("ctInfoBreturns") },
-      payment:  { title: val("ctInfoTpayment").trim(),  subtitle: val("ctInfoSpayment").trim(),  body: val("ctInfoBpayment") },
-      track:    { title: val("ctInfoTtrack").trim(),    subtitle: val("ctInfoStrack").trim(),    body: val("ctInfoBtrack") },
-      faq:      { title: val("ctInfoTfaq").trim(),      subtitle: val("ctInfoSfaq").trim(),      body: val("ctInfoBfaq") }
     }
   };
   cleanContentObj(c);
@@ -3134,7 +3123,6 @@ function viewAdminLogin(msg){
       '<div class="field"><label>Login name</label><input id="loginUser" type="text" placeholder="admin" autocomplete="username"></div>' +
       '<div class="field"><label>Password</label><input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')doLogin()"></div>' +
       '<button class="btn full" style="margin-top:8px" onclick="doLogin()">Sign in</button>' +
-      '<p style="text-align:center;font-size:12px;color:var(--ink-soft);margin-top:16px">Default login: <b>admin</b> · default password: <b>abcd1234</b> — change it later in Admin Users</p>' +
     '</div>' +
   '</div>';
 }
@@ -3240,6 +3228,10 @@ loadRates();
 updateCartUI();
 syncSticky();
 window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => {
+  const mm = document.querySelector("#allCats.open");
+  if(mm) mm.classList.remove("open");
+});
 window.addEventListener("resize", syncSticky);
 route();
 /* Cloud sync: pull the latest from GitHub in the background after first render */
