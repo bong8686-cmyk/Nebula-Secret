@@ -890,18 +890,47 @@ function getTheme(){
 }
 function saveTheme(t){ lsSet(LS.theme, t); cloudPushKey("theme", t); }
 
-function getProducts(){ return lsGet(LS.products, DEFAULT_PRODUCTS); }
-function saveProducts(p){ lsSet(LS.products, p); cloudPushKey("products", p); }
+/* Cloud catalog: optional live catalog fetched from GitHub Pages data/*.json, so
+   visitors always see the latest products/categories without re-uploading index.html.
+   Priority: browser localStorage (this device's own changes) > cloud catalog > built-in defaults. */
+let cloudCatalog = null, cloudCats = null;
+function getProducts(){
+  const v = localStorage.getItem(LS.products);
+  if(v != null){ try{ const j = JSON.parse(v); if(Array.isArray(j)) return j; }catch(e){} }
+  if(cloudCatalog && cloudCatalog.length) return cloudCatalog.slice();
+  return DEFAULT_PRODUCTS;
+}
+function saveProducts(p){ lsSet(LS.products, p); return cloudPushKey("products", p); }
 function resetProducts(){ localStorage.removeItem(LS.products); }
 
 function getCats(){
   const saved = lsGet(LS.cats, null);
   if(saved) return saved;
+  if(cloudCats && cloudCats.length) return cloudCats.slice();
   const seen = {}; const cats = [];
-  DEFAULT_PRODUCTS.forEach(p => {
+  const src = (cloudCatalog && cloudCatalog.length) ? cloudCatalog : DEFAULT_PRODUCTS;
+  src.forEach(p => {
     if(!seen[p.cs]){ seen[p.cs] = true; cats.push({c: p.c, cs: p.cs, i: p.i}); }
   });
   return cats;
+}
+async function loadCloudCatalog(){
+  try{
+    const t = "?t=" + Date.now();
+    const r = await fetch("data/products.json" + t);
+    if(r.ok){
+      const j = await r.json();
+      if(Array.isArray(j) && j.length) cloudCatalog = j;
+    }
+    const rc = await fetch("data/cats.json" + t);
+    if(rc.ok){
+      const jc = await rc.json();
+      if(Array.isArray(jc) && jc.length) cloudCats = jc;
+    }
+    if(cloudCatalog || cloudCats){
+      try{ renderCatNav(); route(); }catch(e){}
+    }
+  }catch(e){}
 }
 function saveCats(c){ lsSet(LS.cats, c); cloudPushKey("cats", c); }
 
@@ -1081,10 +1110,10 @@ function cloudApply(key, data){
   else if(key === "admins") saveAdmins(data);
 }
 async function cloudPushKey(key, data){
-  if(!cloudReady()) return;
-  const file = CLOUD_FILES[key]; if(!file) return;
-  try{ await ghPutFile(getCloudCfg(), file, data); }
-  catch(e){ console.warn("cloud push failed:", key, String(e && e.message || e)); }
+  if(!cloudReady()) return {ok:false, reason:"off"};
+  const file = CLOUD_FILES[key]; if(!file) return {ok:false, reason:"nofile"};
+  try{ await ghPutFile(getCloudCfg(), file, data); return {ok:true}; }
+  catch(e){ console.warn("cloud push failed:", key, String(e && e.message || e)); return {ok:false, reason: String(e && e.message || e)}; }
 }
 async function cloudPushAll(){
   if(!cloudReady()) return {ok:false, reason:"not-configured"};
@@ -2493,8 +2522,15 @@ function saveProductForm(id){
   else { products.push(rec); }
   saveProducts(products);
   closeAdminModal();
-  showToast(existing ? "Product updated" : "Product added");
   adminProducts();
+  if(cloudReady()){
+    showToast("Saving & syncing to cloud…");
+    cloudPushKey("products", products).then(r => {
+      showToast(r && r.ok ? ((existing ? "Product updated" : "Product added") + " & synced to cloud") : ((existing ? "Product updated" : "Product added") + " locally — cloud sync failed: " + (r && r.reason || "unknown")));
+    });
+  } else {
+    showToast(existing ? "Product updated" : "Product added");
+  }
 }
 
 function deleteProduct(id){
@@ -3068,6 +3104,8 @@ window.addEventListener("resize", syncSticky);
 route();
 /* Cloud sync: pull the latest from GitHub in the background after first render */
 cloudPullAll().then(() => { try{ route(); }catch(e){} });
+/* Cloud catalog: visitors fetch the latest products/categories from data/*.json */
+loadCloudCatalog();
 </script>
 </body>
 </html>
