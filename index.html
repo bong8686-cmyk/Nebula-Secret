@@ -33,7 +33,7 @@ h1,h2,h3,.display{font-family:var(--font-display)}
 ::selection{background:var(--brand-soft)}
 
 /* ================= Buttons ================= */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:#fff;font-weight:600;font-size:14.5px;padding:12px 26px;border-radius:8px;transition:background .2s,transform .15s,box-shadow .2s;border:1px solid transparent}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--brand);color:#fff;font-weight:600;font-size:14.5px;padding:12px 26px;border-radius:8px;transition:background .2s,transform .15s,box-shadow .2s;border:1px solid transparent;white-space:nowrap;flex-shrink:0}
 .btn:hover{background:var(--brand-dark);transform:translateY(-1px);box-shadow:0 6px 18px rgba(230,67,110,.3)}
 .btn.sm{padding:8px 16px;font-size:13px}
 .btn.full{width:100%;justify-content:center}
@@ -950,7 +950,7 @@ function applyFooterContent(){
 /* Cloud catalog: optional live catalog fetched from GitHub Pages data/*.json, so
    visitors always see the latest products/categories without re-uploading index.html.
    Priority: browser localStorage (this device's own changes) > cloud catalog > built-in defaults. */
-let cloudCatalog = null, cloudCats = null, cloudContent = null, cloudTheme = null;
+let cloudCatalog = null, cloudCats = null, cloudContent = null, cloudTheme = null, cloudOrders = null, cloudAccounts = null;
 function getProducts(){
   const v = localStorage.getItem(LS.products);
   if(v != null){ try{ const j = JSON.parse(v); if(Array.isArray(j)) return j; }catch(e){} }
@@ -977,24 +977,34 @@ async function loadCloudCatalog(){
     const r = await fetch("data/products.json" + t);
     if(r.ok){
       const j = await r.json();
-      if(Array.isArray(j) && j.length) cloudCatalog = j;
+      if(Array.isArray(j) && j.length){ cloudCatalog = j; try{ localStorage.setItem(LS.products, JSON.stringify(j)); }catch(e){} }
     }
     const rc = await fetch("data/cats.json" + t);
     if(rc.ok){
       const jc = await rc.json();
-      if(Array.isArray(jc) && jc.length) cloudCats = jc;
+      if(Array.isArray(jc) && jc.length){ cloudCats = jc; try{ localStorage.setItem(LS.cats, JSON.stringify(jc)); }catch(e){} }
     }
     const rc2 = await fetch("data/content.json" + t);
     if(rc2.ok){
       const jc2 = await rc2.json();
-      if(jc2 && typeof jc2 === "object") cloudContent = jc2;
+      if(jc2 && typeof jc2 === "object"){ cloudContent = jc2; try{ localStorage.setItem(LS.content, JSON.stringify(jc2)); }catch(e){} }
     }
     const rc3 = await fetch("data/theme.json" + t);
     if(rc3.ok){
       const jc3 = await rc3.json();
-      if(jc3 && typeof jc3 === "object") cloudTheme = jc3;
+      if(jc3 && typeof jc3 === "object"){ cloudTheme = jc3; try{ localStorage.setItem(LS.theme, JSON.stringify(jc3)); }catch(e){} }
     }
-    if(cloudCatalog || cloudCats || cloudContent || cloudTheme){
+    const ro = await fetch("data/orders.json" + t);
+    if(ro.ok){
+      const jo = await ro.json();
+      if(Array.isArray(jo)){ cloudOrders = jo; try{ localStorage.setItem(LS.orders, JSON.stringify(jo)); }catch(e){} }
+    }
+    const ra = await fetch("data/accounts.json" + t);
+    if(ra.ok){
+      const ja = await ra.json();
+      if(Array.isArray(ja)){ cloudAccounts = ja; try{ localStorage.setItem(LS.accounts, JSON.stringify(ja)); }catch(e){} }
+    }
+    if(cloudCatalog || cloudCats || cloudContent || cloudTheme || cloudOrders || cloudAccounts){
       try{ renderCatNav(); applyFooterContent(); applyTheme(); route(); }catch(e){}
     }
   }catch(e){}
@@ -1183,7 +1193,12 @@ async function cloudPushKey(key, data){
   if(!cloudReady()) return {ok:false, reason:"off"};
   const file = CLOUD_FILES[key]; if(!file) return {ok:false, reason:"nofile"};
   try{ await ghPutFile(getCloudCfg(), file, data); return {ok:true}; }
-  catch(e){ console.warn("cloud push failed:", key, String(e && e.message || e)); return {ok:false, reason: String(e && e.message || e)}; }
+  catch(e){
+    const msg = String(e && e.message || e);
+    console.warn("cloud push failed:", key, msg);
+    try{ showToast("Cloud sync failed (" + key + "): " + msg); }catch(e2){}
+    return {ok:false, reason: msg};
+  }
 }
 async function cloudPushAll(){
   if(!cloudReady()) return {ok:false, reason:"not-configured"};
