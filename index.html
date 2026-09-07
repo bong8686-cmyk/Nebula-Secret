@@ -550,6 +550,12 @@ table.admin-table{width:100%;border-collapse:collapse;font-size:13.5px}
 .swatch.active{box-shadow:0 0 0 2px var(--brand)}
 .save-bar{position:sticky;bottom:0;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 -6px 20px rgba(31,30,35,.06);margin-top:10px}
 .save-bar .sb-note{font-size:12.5px;color:var(--ink-soft)}
+details.ct-block{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;background:#fff;overflow:hidden}
+details.ct-block summary{cursor:pointer;padding:13px 16px;font-size:14px;background:rgba(26,27,28,.03);border-bottom:1px solid var(--line);list-style:none;display:flex;align-items:center;gap:8px}
+details.ct-block summary::-webkit-details-marker{display:none}
+details.ct-block summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--ink-soft);border-bottom:2px solid var(--ink-soft);transform:rotate(-45deg);transition:transform .2s;flex-shrink:0}
+details.ct-block[open] summary::before{transform:rotate(45deg)}
+details.ct-block > .form-grid{padding:14px 16px}
 
 /* ================= Responsive ================= */
 @media (max-width:1100px){
@@ -720,7 +726,7 @@ table.admin-table{width:100%;border-collapse:collapse;font-size:13.5px}
   <div class="footer-inner">
     <div class="footer-brand">
       <img src="images/Neubla_logo_black_1729172124.png" alt="Nebula Secret">
-      <p>We supply everyday products you find in department stores — skincare, body care, home wellness and much more — tailored to your requirements through wholesale and OEM/ODM.</p>
+      <p id="ftDesc">We supply everyday products you find in department stores — skincare, body care, home wellness and much more — tailored to your requirements through wholesale and OEM/ODM.</p>
     </div>
     <div class="footer-col">
       <h4>Shop</h4>
@@ -755,7 +761,7 @@ table.admin-table{width:100%;border-collapse:collapse;font-size:13.5px}
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 Nebula Secret. All rights reserved.</span>
+    <span id="ftCopy">© 2026 Nebula Secret. All rights reserved.</span>
     <span><a class="admin-link" href="#/admin">Admin</a></span>
   </div>
 </footer>
@@ -846,6 +852,7 @@ const LS = {
   admins: "ns_admins_v3",
   asession: "ns_asession_v3",
   subscribers: "ns_subscribers_v3",
+  content: "ns_content_v3",
   cloudsync: "ns_cloudsync_v3"
 };
 /* Migrate: drop legacy v2 data that may carry broken images/categories from earlier testing */
@@ -890,10 +897,31 @@ function getTheme(){
 }
 function saveTheme(t){ lsSet(LS.theme, t); cloudPushKey("theme", t); }
 
+/* ---- Editable site content (Footer / About / Customer Care) ----
+   getContent() returns a user-overrides object (empty = use built-in defaults).
+   Admin → Site Content lets you edit these; edits are stored locally and synced to data/content.json. */
+function getContent(){
+  const v = localStorage.getItem(LS.content);
+  if(v != null){ try{ const j = JSON.parse(v); if(j && typeof j === "object") return j; }catch(e){} }
+  if(cloudContent) return cloudContent;
+  return {};
+}
+function saveContent(c){ lsSet(LS.content, c); return cloudPushKey("content", c); }
+function resetContent(){ localStorage.removeItem(LS.content); }
+function contentSection(section){
+  const c = getContent();
+  return (c && c[section]) || {};
+}
+function applyFooterContent(){
+  const fc = contentSection("footer");
+  if(fc.desc){ const el = document.getElementById("ftDesc"); if(el) el.textContent = fc.desc; }
+  if(fc.copyright){ const el = document.getElementById("ftCopy"); if(el) el.textContent = fc.copyright; }
+}
+
 /* Cloud catalog: optional live catalog fetched from GitHub Pages data/*.json, so
    visitors always see the latest products/categories without re-uploading index.html.
    Priority: browser localStorage (this device's own changes) > cloud catalog > built-in defaults. */
-let cloudCatalog = null, cloudCats = null;
+let cloudCatalog = null, cloudCats = null, cloudContent = null;
 function getProducts(){
   const v = localStorage.getItem(LS.products);
   if(v != null){ try{ const j = JSON.parse(v); if(Array.isArray(j)) return j; }catch(e){} }
@@ -927,8 +955,13 @@ async function loadCloudCatalog(){
       const jc = await rc.json();
       if(Array.isArray(jc) && jc.length) cloudCats = jc;
     }
-    if(cloudCatalog || cloudCats){
-      try{ renderCatNav(); route(); }catch(e){}
+    const rc2 = await fetch("data/content.json" + t);
+    if(rc2.ok){
+      const jc2 = await rc2.json();
+      if(jc2 && typeof jc2 === "object") cloudContent = jc2;
+    }
+    if(cloudCatalog || cloudCats || cloudContent){
+      try{ renderCatNav(); applyFooterContent(); route(); }catch(e){}
     }
   }catch(e){}
 }
@@ -1065,7 +1098,8 @@ const CLOUD_FILES = {
   theme: "data/theme.json",
   orders: "data/orders.json",
   accounts: "data/accounts.json",
-  admins: "data/admins.json"
+  admins: "data/admins.json",
+  content: "data/content.json"
 };
 function getCloudCfg(){ return lsGet(LS.cloudsync, { owner: "", repo: "", token: "", enabled: false }); }
 function saveCloudCfg(c){ lsSet(LS.cloudsync, c); }
@@ -1099,6 +1133,7 @@ function cloudDataFor(key){
   if(key === "orders") return getOrders();
   if(key === "accounts") return getAccounts();
   if(key === "admins") return getAdmins();
+  if(key === "content") return getContent();
   return null;
 }
 function cloudApply(key, data){
@@ -1108,6 +1143,7 @@ function cloudApply(key, data){
   else if(key === "orders") saveOrders(data);
   else if(key === "accounts") saveAccounts(data);
   else if(key === "admins") saveAdmins(data);
+  else if(key === "content") saveContent(data);
 }
 async function cloudPushKey(key, data){
   if(!cloudReady()) return {ok:false, reason:"off"};
@@ -1641,6 +1677,16 @@ function viewAbout(){
     {t:"Seasonal Gifts", icon:rIcon('<path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>')}
   ];
   const brands = ["Emporio Armani","Giorgio Armani","Moschino","Calvin Klein","Under Armour","Stella McCartney","Philipp Plein","Marni","Hogan","Sergio Rossi","Pal Zileri","Neil Barrett"];
+  /* Editable content (Admin → Site Content → About) */
+  const ab = contentSection("about");
+  const S = (sec, field, dflt) => { const o = ab[sec] || {}; return o[field] || dflt; };
+  const abStoryT = S("story","t","Our Story");
+  const abStoryB = S("story","b",'<p>Founded in the United Kingdom, <strong>Nebula Secret</strong> is the wholesale and OEM/ODM home of <strong>Nebula Corporate Limited</strong>. With offices in London, Hong Kong and mainland China, and a trusted network of manufacturers across China and the Asia-Pacific region, we bring together global expertise, craftsmanship and a genuine passion for quality.</p><p>What began as a sourcing house with a passion for quality has grown into a brand dedicated to making everyday products a little more special. Every product in our collection is carefully curated to combine on-trend design, superior quality and honest pricing — so your customers can enjoy a little everyday luxury without compromise.</p><p>From body scrubs and facial masks to essential oils, incense and other everyday essentials found in department stores, each item is chosen with care, tested with attention, and delivered with the promise that it deserves a place in your home.</p>');
+  const abMissionT = S("mission","t","Our Mission");
+  const abMissionLead = S("mission","lead","We believe self-care should be simple, joyful and accessible to everyone.");
+  const abMissionB = S("mission","b",'<p>From the first concept to the final product, we oversee every step — sourcing, formulation, packaging and quality control — to deliver products that feel good and do good. We bridge global markets so that the finest ingredients, trends and craftsmanship can reach your doorstep, wherever you are.</p><p>We build everything on <strong>trust, integrity and transparency</strong>. We work closely with our manufacturing partners to ensure every batch meets our strict standards, and we are always honest about what goes into our products — because you deserve to know exactly what you are bringing into your home.</p>');
+  const abPromiseT = S("promise","t","Our Promise to You");
+  const abPromiseLead = S("promise","lead","Five principles that guide everything we make and do.");
   let html =
   '<section class="about-hero">' +
     '<div><h1>About Nebula Secret</h1>' +
@@ -1648,26 +1694,19 @@ function viewAbout(){
   '</section>' +
 
   '<section class="about-section" id="ab-story">' +
-    '<h2><span class="bar"></span>Our Story</h2>' +
-    '<div class="about-prose">' +
-      '<p>Founded in the United Kingdom, <strong>Nebula Secret</strong> is the wholesale and OEM/ODM home of <strong>Nebula Corporate Limited</strong>. With offices in London, Hong Kong and mainland China, and a trusted network of manufacturers across China and the Asia-Pacific region, we bring together global expertise, craftsmanship and a genuine passion for quality.</p>' +
-      '<p>What began as a sourcing house with a passion for quality has grown into a brand dedicated to making everyday products a little more special. Every product in our collection is carefully curated to combine on-trend design, superior quality and honest pricing — so your customers can enjoy a little everyday luxury without compromise.</p>' +
-      '<p>From body scrubs and facial masks to essential oils, incense and other everyday essentials found in department stores, each item is chosen with care, tested with attention, and delivered with the promise that it deserves a place in your home.</p>' +
-    '</div>' +
+    '<h2><span class="bar"></span>' + abStoryT + '</h2>' +
+    '<div class="about-prose">' + abStoryB + '</div>' +
   '</section>' +
 
   '<section class="about-section" id="ab-mission">' +
-    '<h2><span class="bar"></span>Our Mission</h2>' +
-    '<p class="lead">We believe self-care should be simple, joyful and accessible to everyone.</p>' +
-    '<div class="about-prose">' +
-      '<p>From the first concept to the final product, we oversee every step — sourcing, formulation, packaging and quality control — to deliver products that feel good and do good. We bridge global markets so that the finest ingredients, trends and craftsmanship can reach your doorstep, wherever you are.</p>' +
-      '<p>We build everything on <strong>trust, integrity and transparency</strong>. We work closely with our manufacturing partners to ensure every batch meets our strict standards, and we are always honest about what goes into our products — because you deserve to know exactly what you are bringing into your home.</p>' +
-    '</div>' +
+    '<h2><span class="bar"></span>' + abMissionT + '</h2>' +
+    '<p class="lead">' + abMissionLead + '</p>' +
+    '<div class="about-prose">' + abMissionB + '</div>' +
   '</section>' +
 
   '<section class="about-section" id="ab-promise">' +
-    '<h2><span class="bar"></span>Our Promise to You</h2>' +
-    '<p class="lead">Five principles that guide everything we make and do.</p>' +
+    '<h2><span class="bar"></span>' + abPromiseT + '</h2>' +
+    '<p class="lead">' + abPromiseLead + '</p>' +
     '<div class="value-grid">' +
       values.map(v => '<div class="value-card"><div class="v-icon">' + v.icon + '</div><h3>' + v.t + '</h3><p>' + v.p + '</p></div>').join("") +
     '</div>' +
@@ -1855,6 +1894,13 @@ function viewInfo(page){
     title = "Information"; subtitle = "";
     body = '<p style="color:var(--ink-soft)">Page not found. <a href="#/shop" style="color:var(--brand-dark)">Return to shop</a>.</p>';
   }
+
+  /* Editable content override (Admin → Site Content) */
+  const ov = contentSection("info");
+  const infoOv = (ov && ov[page]) || {};
+  if(infoOv.title) title = infoOv.title;
+  if(infoOv.subtitle) subtitle = infoOv.subtitle;
+  if(infoOv.body) body = infoOv.body;
 
   $("#app").innerHTML =
   '<section class="info-hero"><div><h1>' + title + '</h1>' + (subtitle ? '<p>' + subtitle + '</p>' : '') + '</div></section>' +
@@ -2282,6 +2328,7 @@ function renderAdminShell(content){
         '<a href="#/admin/categories" data-av="categories">' + IC.tag + ' Categories</a>' +
         '<a href="#/admin/customers" data-av="customers">' + IC.users + ' Customer Accounts</a>' +
         '<a href="#/admin/theme" data-av="theme">' + IC.palette + ' Theme</a>' +
+        '<a href="#/admin/content" data-av="content">' + IC.edit + ' Site Content</a>' +
         '<a href="#/admin/cloudsync" data-av="cloudsync">' + IC.sync + ' Cloud Sync</a>' +
         '<div class="sep"></div>' +
         '<a href="#/admin/users" data-av="users">' + IC.shield + ' Admin Users</a>' +
@@ -2764,6 +2811,97 @@ function adminTheme(){
   const mp = $("#mailProvider");
   if(mp) mp.onchange = toggleMailProvider;
 }
+function adminContent(){
+  const c = getContent();
+  const fo = c.footer || {};
+  const ab = c.about || {};
+  const inf = c.info || {};
+  const infoPage = (p) => (inf[p] || {});
+  const pages = [
+    ["shipping","Shipping &amp; Delivery"],
+    ["returns","Order Policy"],
+    ["payment","Payment Methods"],
+    ["track","Track Order"],
+    ["faq","FAQs"]
+  ];
+  const content =
+    '<div class="admin-panel"><div class="panel-head"><div><h3>Site Content</h3><div class="ph-sub">Edit the words on your public pages — Footer, About and Customer Care. Leave a field empty to keep the default text.</div></div><button class="btn sm ghost" onclick="if(confirm(\'Reset all site content to defaults?\')){ resetContent(); applyFooterContent(); showToast(\'Site content reset to defaults\'); adminContent(); }">Reset all</button></div>' +
+    '<div class="panel-body">' +
+      '<details class="ct-block" open><summary><b>Footer</b></summary>' +
+        '<div class="form-grid">' +
+          '<div class="field full"><label>Brand description</label><textarea id="ctFooterDesc" rows="3">' + esc(fo.desc || "") + '</textarea></div>' +
+          '<div class="field full"><label>Copyright line</label><input id="ctFooterCopy" value="' + esc(fo.copyright || "") + '"></div>' +
+        '</div></details>' +
+      '<details class="ct-block" open><summary><b>About — Our Story</b></summary>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>Section title</label><input id="ctStoryT" value="' + esc((ab.story||{}).t || "") + '"></div>' +
+          '<div class="field full"><label>Body (HTML)</label><textarea id="ctStoryB" rows="6" placeholder="Leave empty to keep the default paragraphs">' + esc((ab.story||{}).b || "") + '</textarea></div>' +
+        '</div></details>' +
+      '<details class="ct-block"><summary><b>About — Our Mission</b></summary>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>Section title</label><input id="ctMissionT" value="' + esc((ab.mission||{}).t || "") + '"></div>' +
+          '<div class="field"><label>Lead line</label><input id="ctMissionLead" value="' + esc((ab.mission||{}).lead || "") + '"></div>' +
+          '<div class="field full"><label>Body (HTML)</label><textarea id="ctMissionB" rows="6" placeholder="Leave empty to keep the default paragraphs">' + esc((ab.mission||{}).b || "") + '</textarea></div>' +
+        '</div></details>' +
+      '<details class="ct-block"><summary><b>About — Our Promise</b></summary>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>Section title</label><input id="ctPromiseT" value="' + esc((ab.promise||{}).t || "") + '"></div>' +
+          '<div class="field full"><label>Lead line</label><input id="ctPromiseLead" value="' + esc((ab.promise||{}).lead || "") + '"></div>' +
+        '</div></details>' +
+      pages.map(function(pg){
+        const key = pg[0], label = pg[1];
+        const v = infoPage(key);
+        return '<details class="ct-block"><summary><b>Customer Care — ' + label + '</b></summary>' +
+          '<div class="form-grid">' +
+            '<div class="field"><label>Page title</label><input id="ctInfoT' + key + '" value="' + esc(v.title || "") + '"></div>' +
+            '<div class="field"><label>Subtitle</label><input id="ctInfoS' + key + '" value="' + esc(v.subtitle || "") + '"></div>' +
+            '<div class="field full"><label>Page body (HTML)</label><textarea id="ctInfoB' + key + '" rows="8" placeholder="Leave empty to keep the default page content">' + esc(v.body || "") + '</textarea></div>' +
+          '</div></details>';
+      }).join("") +
+    '</div></div>' +
+    '<div class="save-bar"><span class="sb-note">Empty fields keep the current default content. Saved content also syncs to the cloud (data/content.json).</span><button class="btn" onclick="saveContentForm()">Save Content</button></div>';
+  renderAdminShell(content);
+  $("#adminTitle").textContent = "Site Content";
+}
+function saveContentForm(){
+  const val = id => { const el = document.getElementById(id); return el ? el.value : ""; };
+  const c = {
+    footer: { desc: val("ctFooterDesc").trim(), copyright: val("ctFooterCopy").trim() },
+    about: {
+      story: { t: val("ctStoryT").trim(), b: val("ctStoryB") },
+      mission: { t: val("ctMissionT").trim(), lead: val("ctMissionLead").trim(), b: val("ctMissionB") },
+      promise: { t: val("ctPromiseT").trim(), lead: val("ctPromiseLead").trim() }
+    },
+    info: {
+      shipping: { title: val("ctInfoTshipping").trim(), subtitle: val("ctInfoSshipping").trim(), body: val("ctInfoBshipping") },
+      returns:  { title: val("ctInfoTreturns").trim(),  subtitle: val("ctInfoSreturns").trim(),  body: val("ctInfoBreturns") },
+      payment:  { title: val("ctInfoTpayment").trim(),  subtitle: val("ctInfoSpayment").trim(),  body: val("ctInfoBpayment") },
+      track:    { title: val("ctInfoTtrack").trim(),    subtitle: val("ctInfoStrack").trim(),    body: val("ctInfoBtrack") },
+      faq:      { title: val("ctInfoTfaq").trim(),      subtitle: val("ctInfoSfaq").trim(),      body: val("ctInfoBfaq") }
+    }
+  };
+  cleanContentObj(c);
+  saveContent(c);
+  applyFooterContent();
+  showToast("Site content saved");
+  if(cloudReady()){
+    cloudPushKey("content", c).then(r => {
+      if(r && r.ok) showToast("Site content saved & synced to cloud");
+      else showToast("Saved locally — cloud sync failed: " + (r && r.reason || "unknown"));
+    });
+  }
+}
+function cleanContentObj(obj){
+  Object.keys(obj).forEach(k => {
+    const v = obj[k];
+    if(v && typeof v === "object" && !Array.isArray(v)){
+      cleanContentObj(v);
+      if(Object.keys(v).length === 0) delete obj[k];
+    } else if(typeof v === "string" && !v.trim()){
+      delete obj[k];
+    }
+  });
+}
 function adminCloudSync(){
   const cc = getCloudCfg();
   const content =
@@ -3040,6 +3178,7 @@ function adminRoute(){
   else if(page === "customers") adminCustomers();
   else if(page === "users") adminAdminUsers();
   else if(page === "theme") adminTheme();
+  else if(page === "content") adminContent();
   else if(page === "cloudsync") adminCloudSync();
   else viewAdminLogin();
 }
@@ -3093,6 +3232,7 @@ function syncSticky(){
 }
 cleanupOldData();
 applyTheme();
+applyFooterContent();
 renderCatNav();
 buildCurSel();
 updateAcctLabel();
